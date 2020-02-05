@@ -368,5 +368,7 @@ export TBW_KILLSWITCH_ENGAGE
 ' >> ~/.profile
 
 
+. ./v4l2-test.sh
+
 echo "build ready"
 
