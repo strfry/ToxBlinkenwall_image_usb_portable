@@ -1,6 +1,6 @@
-#! /bin/bash
+#!/bin/sh
 
-
+# set -e
 
 echo "starting ..."
 
@@ -8,7 +8,7 @@ START_TIME=$SECONDS
 
 ## ----------------------
 numcpus_=$(nproc)
-quiet_=1
+quiet_=0
 full="1"
 download_full="0"
 ## ----------------------

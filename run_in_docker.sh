@@ -9,5 +9,5 @@ docker run -ti --privileged --rm \
   -e DISPLAY=$DISPLAY \
   --net=host \
   "$system_to_build_for" \
-  /bin/bash /artefacts/runme.sh
+  sh /artefacts/runme.sh
 
