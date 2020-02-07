@@ -63,6 +63,7 @@ echo "installing more system packages ..."
 
 pkgs="
     bash
+    perl
     git
     curl
     wget
