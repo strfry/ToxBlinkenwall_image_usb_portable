@@ -62,6 +62,7 @@ echo "compiling on: $system__ $version__"
 echo "installing more system packages ..."
 
 pkgs="
+    bash
     git
     curl
     wget
