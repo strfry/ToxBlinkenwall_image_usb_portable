@@ -1,6 +1,6 @@
 #! /bin/bash
 
-system_to_build_for="ubuntu:18.04"
+system_to_build_for="alpine:latest"
 
 cd $_HOME_/
 docker run -ti --privileged --rm \
