@@ -103,7 +103,7 @@ done
 deb_release="buster"
 
 echo $_HOME_
-mkdir -p $_HOME_/LIVE_BOOT
+mkdir -p $_HOME_/LIVE_BOOT/chroot
 
 echo "running debootstrap (debian:""$deb_release"") ..."
 debootstrap \
@@ -500,6 +500,7 @@ cp -av /artefacts/enter_screen_name.sh $_HOME_/LIVE_BOOT/chroot/enter_screen_nam
 chmod a+rx $_HOME_/LIVE_BOOT/chroot/enter_screen_name.sh
 ls -al $_HOME_/LIVE_BOOT/chroot/
 
+mkdir -p $_HOME_/LIVE_BOOT/chroot/home/pi/
 cp -av /artefacts/build_tbw.sh $_HOME_/LIVE_BOOT/chroot/home/pi/build_tbw.sh
 chmod a+rx $_HOME_/LIVE_BOOT/chroot/home/pi/build_tbw.sh
 ls -al $_HOME_/LIVE_BOOT/chroot/home/pi
