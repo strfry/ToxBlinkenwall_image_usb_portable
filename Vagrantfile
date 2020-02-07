@@ -32,9 +32,5 @@ Vagrant.configure("2") do |config|
     config.vm.synced_folder '.', '/vagrant', nfs: true, nfs_version: 4, nfs_udp: false
   end
 
-  # ------------------------
-  config.vm.provision "shell", inline: <<-SHELL
-    echo "building image ..."
-    bash /artefacts/runme.sh
-  SHELL
+  config.vm.provision "shell", path: "do_it___external.sh"
 end
