@@ -32,9 +32,5 @@ Vagrant.configure("2") do |config|
 
 #  config.vm.network :public_network, :ip => '10.20.30.41'
 
-  # ------------------------
-  config.vm.provision "shell", inline: <<-SHELL
-    echo "building image ..."
-    bash /artefacts/runme.sh
-  SHELL
+  config.vm.provision "shell", path: "do_it___external.sh"
 end
