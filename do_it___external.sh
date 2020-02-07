@@ -15,7 +15,7 @@ download_full="0"
 
 
 echo "++++++++++++++++++++++++++"
-id -a
+id
 pwd
 df -h
 sleep 1
