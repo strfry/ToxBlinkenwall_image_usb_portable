@@ -15,6 +15,8 @@ download_full="0"
 
 
 echo "++++++++++++++++++++++++++"
+id -a
+pwd
 df -h
 sleep 1
 echo "++++++++++++++++++++++++++"
@@ -81,6 +83,8 @@ pkgs="
     grub-pc-bin
     grub-efi-amd64-bin
     mtools
+    sudo
+    dosfstools
 "
 
 for i in $pkgs ; do
@@ -94,7 +98,7 @@ done
 
 #### build ###############################################
 
-deb_release="stretch"
+deb_release="buster"
 
 echo $_HOME_
 mkdir -p $_HOME_/LIVE_BOOT
@@ -135,8 +139,9 @@ cat /etc/apt/sources.list
 sleep 2
 # -----------------
 #sed -i -e 's#main#main contrib non-free#' /etc/apt/sources.list
-echo 'deb http://ftp.debian.org/debian stretch main contrib non-free
-deb http://security.debian.org/debian-security/ stretch/updates main contrib non-free
+echo 'deb http://ftp.debian.org/debian buster main contrib non-free
+deb http://security.debian.org/debian-security/ buster/updates main contrib non-free
+deb http://deb.debian.org/debian buster-backports main contrib non-free
 ' > /etc/apt/sources.list
 # -----------------
 cat /etc/apt/sources.list
@@ -182,7 +187,9 @@ apt-get install -y --force-yes isc-dhcp-client
 apt-get install -y --force-yes alsa-utils
 apt-get install -y --force-yes libasound-dev
 apt-get install -y --force-yes v4l-utils
-apt-get install -y --force-yes v4l-conf
+
+apt-get -t buster-backports install -y -o "Dpkg::Options::=--force-confdef" --force-yes "v4l-conf"
+
 apt-get install -y --force-yes libv4l-dev
 apt-get install -y --force-yes libv4lconvert0
 apt-get install -y --force-yes --no-install-recommends adduser
@@ -220,7 +227,20 @@ apt-get install -y --force-yes amd64-microcode
 # apt-get install -y --force-yes --no-install-recommends -o "Dpkg::Options::=--force-confdef" console-setup-linux
 # apt-get install -y --force-yes --no-install-recommends -o "Dpkg::Options::=--force-confdef" console-setup
 apt-get install -y --force-yes --no-install-recommends -o "Dpkg::Options::=--force-confdef" console-data
+
+echo "####### cryptsetup #######"
+echo "####### cryptsetup #######"
+#ls -al /proc/mounts
+#mkdir -p /usr/share/initramfs-tools/conf-hooks.d/
+#echo 'export CRYPTSETUP=y' >> /usr/share/initramfs-tools/conf-hooks.d/forcecryptsetup
+#mkdir -p /etc/cryptsetup-initramfs/
+#echo 'CRYPTSETUP=y' >> /etc/cryptsetup-initramfs/conf-hook
+#mkdir -p /etc/initramfs-tools/conf.d
+#echo 'export CRYPTSETUP=y' >> /etc/initramfs-tools/conf.d/cryptsetup
+#
 apt-get install -y --force-yes -o "Dpkg::Options::=--force-confdef" cryptsetup
+echo "####### cryptsetup #######"
+echo "####### cryptsetup #######"
 
 # reset
 # tput reset
@@ -244,10 +264,10 @@ libqrencode-dev vim nano \
 wget curl git make \
 autotools-dev libtool bc \
 libv4l-dev \
-libv4lconvert0 v4l-conf v4l-utils \
+libv4lconvert0 v4l-utils \
 pkg-config libjpeg-dev \
 libpulse-dev libconfig-dev \
-automake checkinstall \
+automake \
 check yasm \
 libasound2-dev \
 libasound2-plugins \
@@ -255,8 +275,6 @@ bc htop speedometer \
 ntp ntpstat \
 python-setuptools \
 python3-setuptools \
-python-pip \
-python3-pip \
 dnsutils \
 ifmetric \
 sysstat \
@@ -267,9 +285,18 @@ dpkg \
 v86d \
 iputils-ping \
 hostname \
-gdb
+gdb \
+dialog \
+zbar-tools
+
+apt-get install -y -o "Dpkg::Options::=--force-confdef" --force-yes \
+libmagick-dev \
+gettext \
+libticonv-dev \
+util-linux \
 
 
+apt-get -t buster-backports install -y -o "Dpkg::Options::=--force-confdef" --force-yes "checkinstall"
 
 apt-get purge -y --force-yes exim
 apt-get purge -y --force-yes exim4
@@ -347,7 +374,9 @@ locale -a
 # pip install -U tzupdate || pip install -U tzupdate || pip install -U tzupdate || pip install -U tzupdate || pip install -U tzupdate || pip install -U tzupdate
 
 # install module used by "ext_keys_evdev.py" script to get keyboard input events
-python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev
+# python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev || python3 -m pip install evdev
+apt-get install -y --force-yes --no-install-recommends -o "Dpkg::Options::=--force-confdef" python3-evdev || exit 1
+apt-get install -y --force-yes --no-install-recommends -o "Dpkg::Options::=--force-confdef" python3-libevdev || exit 1
 
   rm -f /etc/cron.daily/apt-compat
   rm -f /etc/cron.daily/aptitude
@@ -382,6 +411,7 @@ echo "configure rc.local"
 
 printf '#!/bin/bash\n' > /etc/rc.local
 printf '\n' >> /etc/rc.local
+printf 'systemctl start "serial-getty@ttyS0.service"\n' >> /etc/rc.local
 printf '\n' >> /etc/rc.local
 printf 'openvt -s -w /encrypt_persistent.sh\n' >> /etc/rc.local
 printf '\n' >> /etc/rc.local
@@ -424,7 +454,28 @@ printf 'if [ ! -e /dev/fb0 ]; then modprobe uvesafb ; fi\n' >> /etc/rc.local
 printf 'sleep 1\n' >> /etc/rc.local
 printf 'if [ ! -e /dev/fb0 ]; then modprobe vga16fb ; fi\n' >> /etc/rc.local
 printf '\n' >> /etc/rc.local
+# ---- VM_TEST ----
+printf '\n' >> /etc/rc.local
+# printf 'dkms autoinstall\n' >> /etc/rc.local
+printf 'apt-get install -y --force-yes v4l2loopback-utils gstreamer1.0-plugins-good\n' >> /etc/rc.local
+printf 'apt-get install -y --force-yes gstreamer1.0-plugins-bad\n' >> /etc/rc.local
+printf 'apt-get install -y --force-yes gstreamer1.0-libav\n' >> /etc/rc.local
+printf 'apt-get install -y --force-yes v4l2loopback-dkms\n' >> /etc/rc.local
+printf 'modprobe -r v4l2loopback\n' >> /etc/rc.local
+printf 'modprobe v4l2loopback\n' >> /etc/rc.local
+printf 'v4l2-ctl -d /dev/video0 -c timeout=3000\n' >> /etc/rc.local
+printf 'v4l2loopback-ctl set-fps 25 /dev/video0\n' >> /etc/rc.local
+printf 'v4l2loopback-ctl set-caps "video/x-raw,format=UYVY,width=640,height=480" /dev/video0\n' >> /etc/rc.local
+printf 'v4l2loopback-ctl set-timeout-image /home/pi/ToxBlinkenwall/toxblinkenwall/gfx/loading_bar_25.png /dev/video0\n' >> /etc/rc.local
+printf '\n' >> /etc/rc.local
+# ---- VM_TEST ----
 printf 'su - pi bash -c "/home/pi/ToxBlinkenwall/toxblinkenwall/initscript.sh start" > /dev/null 2>/dev/null &\n' >> /etc/rc.local
+# ---- VM_TEST ----
+printf '\n' >> /etc/rc.local
+printf 'sleep 120\n' >> /etc/rc.local
+printf 'gst-launch-1.0 -v videotestsrc pattern=snow ! "video/x-raw,width=640,height=480,framerate=25/1,format=UYVY" ! v4l2sink device=/dev/video0 &\n' >> /etc/rc.local
+printf '\n' >> /etc/rc.local
+# ---- VM_TEST ----
 printf '\n' >> /etc/rc.local
 printf 'exit 0\n' >> /etc/rc.local
 
@@ -477,6 +528,34 @@ if [ $res11 -ne 0 ]; then
     exit 1
 fi
 
+cat << EOF | chroot $_HOME_/LIVE_BOOT/chroot
+  id -a
+  res=0
+  mkdir -p "/home/pi/zbar/"
+  chmod a+rwx "/home/pi/zbar/"
+  chown pi:pi -R "/home/pi/zbar/"
+  echo "build zbar ..."
+  su - pi bash -c "cd /home/pi/zbar/; git clone https://github.com/zoff99/ZBar_deb || touch /home/pi/ERROR2"
+  su - pi bash -c "cd /home/pi/zbar/ZBar_deb/; bash do_it.sh || touch /home/pi/ERROR2"
+  if [ -e /home/pi/ERROR2 ]; then
+    exit 1
+  fi
+EOF
+
+
+res12=$?
+if [ $res12 -ne 0 ]; then
+    echo ""
+    echo ""
+    echo "******* ERROR building zbar *******"
+    echo "******* ERROR building zbar *******"
+    echo "******* ERROR building zbar *******"
+    echo "******* ERROR building zbar *******"
+    echo ""
+    echo ""
+    exit 1
+fi
+
 echo "create debug fixup script"
 cat << EOF | chroot $_HOME_/LIVE_BOOT/chroot
     echo '#! /bin/bash
@@ -524,6 +603,16 @@ EOF
 echo "reset apt options to default again"
 cat << EOF | chroot $_HOME_/LIVE_BOOT/chroot
 mv -v /etc/apt/apt.conf_BACKUP /etc/apt/apt.conf
+EOF
+
+cat << EOF | chroot $_HOME_/LIVE_BOOT/chroot
+# ---- VM_TEST ----
+# dkms autoinstall
+apt-get install -y --force-yes v4l2loopback-utils gstreamer1.0-plugins-good
+apt-get install -y --force-yes gstreamer1.0-plugins-bad
+apt-get install -y --force-yes gstreamer1.0-libav
+# apt-get install -y --force-yes v4l2loopback-dkms
+# ---- VM_TEST ----
 EOF
 
 
@@ -612,7 +701,7 @@ cat \
 
 # create 25MB ext4 partition image -----------
 dd if=/dev/zero of=${_HOME_}/LIVE_BOOT/scratch/persist_ext4.img bs=4k count=6000
-mkfs.ext4 -U "0e113e75-b4df-418d-98f5-da6a763c1228" -L tbwpersist ${_HOME_}/LIVE_BOOT/scratch/persist_ext4.img
+mkfs.ext4 -U "ffdbdad1-431e-426d-b1f9-2be903c83a48" -L tbwpersist ${_HOME_}/LIVE_BOOT/scratch/persist_ext4.img
 mkdir -p ${_HOME_}/LIVE_BOOT/scratch/mnt_tmp/
 mount -o loop ${_HOME_}/LIVE_BOOT/scratch/persist_ext4.img ${_HOME_}/LIVE_BOOT/scratch/mnt_tmp/
 touch ${_HOME_}/LIVE_BOOT/scratch/mnt_tmp/__tbw_persist_part__

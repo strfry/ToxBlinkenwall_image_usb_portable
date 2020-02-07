@@ -123,7 +123,7 @@ echo ""
 echo ' press "A" to enter your screename'
 echo ' press "N" to setup WIFI'
 echo ' press "F" to setup Public Free WIFI'
-echo "        or wait 3 seconds"
+echo "        or wait 7 seconds"
 echo ""
 
 screen_name=''
@@ -131,7 +131,7 @@ name_set=0
 what=0
 
 echo -n 'press "A" or "N" or "F" ';
-for _ in {1..3}; do
+for _ in {1..7}; do
     read -rs -n1 -t1 name1 > /dev/null 2>&1
     ret=$?
     if [ $ret -eq 0 ]; then
@@ -170,7 +170,7 @@ for _ in {1..3}; do
             what=1
             break
         else
-            echo -n '.'
+            echo -n '.'            
         fi
     else
         echo -n '.'
@@ -181,6 +181,7 @@ echo ""
 
 # restore toxname from persistent storage
 cp -av /home/pi/ToxBlinkenwall/toxblinkenwall/db/toxname.txt /home/pi/ToxBlinkenwall/toxblinkenwall/toxname.txt > /dev/null 2> /dev/null
+chown pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/toxname.txt > /dev/null 2> /dev/null
 
 # set values from user input
 if [ $name_set -eq 1 ]; then
@@ -190,6 +191,7 @@ if [ $name_set -eq 1 ]; then
             echo ""
             echo "Screenname will be : ""$screen_name"
             echo "$screen_name" > /home/pi/ToxBlinkenwall/toxblinkenwall/toxname.txt 2> /dev/null
+            chown pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/toxname.txt > /dev/null 2> /dev/null
             echo ""
             echo ""
             sleep 5

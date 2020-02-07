@@ -24,6 +24,7 @@ chmod a+rwx /v.sh
 
 if [[ $(cat /proc/cmdline 2>/dev/null) =~ 'tbw_hw=1' ]]; then
     cp -av /home/pi/ToxBlinkenwall/toxblinkenwall/toxblinkenwall_hw_nvidia /home/pi/ToxBlinkenwall/toxblinkenwall/toxblinkenwall
+    chown pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/toxblinkenwall_hw_nvidia > /dev/null 2> /dev/null
     echo ""
     echo ""
     echo "--- using NVIDIA HW ACCEL ---"
@@ -82,54 +83,76 @@ echo ""
 echo "found USB boot device: /dev/""$device_"
 echo ""
 
+non_persistent=0
+vm_mode=0
+
 if [ "$device_""x" == "x" ]; then
-    # error!! block forever
-    while [ 1 == 1 ]; do
-        echo '!!DEVICE ERROR D-001 !!'
-        sleep 10
-    done
+    device_="/dev/"'XXXXXXXXXYYYYYYYZZZZZZ'
+    byuuid_device_='AAAAAAAAAAAABBBBBBBBBBCCCCCCCDDDDDDDDDDDDDD'
+    lsblk -nP -o name,mountpoint
+    # error!!
+    echo '!!DEVICE ERROR D-001 !!'
+    sleep 10
+    non_persistent=1
+else
+    # get full device path by some magick above
+    device_="/dev/""$device_"
+    # get full device path by uuid
+    byuuid_device_=$(readlink -f "/dev/disk/by-uuid/ffdbdad1-431e-426d-b1f9-2be903c83a48")
 fi
 
-# get full device path by some magick above
-device_="/dev/""$device_"
-
-# get full device path by uuid
-byuuid_device_=$(readlink -f "/dev/disk/by-uuid/0e113e75-b4df-418d-98f5-da6a763c1228")
-
-non_persistent=0
-
-if [ ! -e "/dev/disk/by-uuid/0e113e75-b4df-418d-98f5-da6a763c1228" ]; then
+if [ ! -e "/dev/disk/by-uuid/ffdbdad1-431e-426d-b1f9-2be903c83a48" ]; then
     echo "UUID device NOT found"
     echo '!!DEVICE ERROR D-004 !!'
     echo '** using non-persistent mode **'
     sleep 10
     non_persistent=1
-    chown -R pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/db/ >/dev/null 2> /dev/null
-    chmod u+rwx /home/pi/ToxBlinkenwall/toxblinkenwall/db/ >/dev/null 2> /dev/null
 else
     echo "found UUID device: ""$byuuid_device_"
     echo ""
 
     # compare if the result is the same
     if [ "$device_""x" != "$byuuid_device_""x" ]; then
-        # error!! block forever
-        # while [ 1 == 1 ]; do
-            echo '!!DEVICE ERROR D-002 !!'
-            echo '** using non-persistent mode **'
-            sleep 10
-            non_persistent=1
-            chown -R pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/db/ >/dev/null 2> /dev/null
-            chmod u+rwx /home/pi/ToxBlinkenwall/toxblinkenwall/db/ >/dev/null 2> /dev/null
-        # done
+        # error!!
+        echo '!!DEVICE ERROR D-002 !!'
+        echo '** using non-persistent mode **'
+        sleep 10
+        non_persistent=1
     fi
 fi
 
-if [ $non_persistent == 0 ]; then
+if [ -e "/dev/vda" ]; then
+    echo "!!! /dev/vda found: Enabling VM Mode (unencrypted)"
+
+    mkdir -p /home/pi/ToxBlinkenwall/toxblinkenwall/db >/dev/null 2> /dev/null
+
+    mount -t ext4 "/dev/vda" /home/pi/ToxBlinkenwall/toxblinkenwall/db/ > /dev/null 2> /dev/null
+    err=$?
+
+    if [ $err -eq 0 ]; then
+        sleep 10
+        vm_mode=1
+    else
+        # error!! block forever
+        while [ 1 == 1 ]; do
+            echo '!!DEVICE ERROR VM-001 !!'
+            echo '** using non-persistent mode **'
+            sleep 10
+            non_persistent=1
+            vm_mode=0
+        done
+    fi
+fi
+
+chown -R pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/db/ >/dev/null 2> /dev/null
+chmod u+rwx /home/pi/ToxBlinkenwall/toxblinkenwall/db/ >/dev/null 2> /dev/null
+
+if [ $non_persistent == 0 ] && [ $vm_mode == 0 ]; then
 
     sleep 2
 
     # check if its the first boot ---------
-    mount -t ext4 "/dev/disk/by-uuid/0e113e75-b4df-418d-98f5-da6a763c1228" /mnt > /dev/null 2> /dev/null
+    mount -t ext4 "/dev/disk/by-uuid/ffdbdad1-431e-426d-b1f9-2be903c83a48" /mnt > /dev/null 2> /dev/null
     err=$?
     # check if its the first boot ---------
 
@@ -157,8 +180,8 @@ if [ $non_persistent == 0 ]; then
         echo ""
 
         # unmount and encrypt
-        umount -f "/dev/disk/by-uuid/0e113e75-b4df-418d-98f5-da6a763c1228" >/dev/null 2> /dev/null
-        cryptsetup -y -q luksFormat --uuid "0e113e75-b4df-418d-98f5-da6a763c1228" "/dev/disk/by-uuid/0e113e75-b4df-418d-98f5-da6a763c1228"
+        umount -f "/dev/disk/by-uuid/ffdbdad1-431e-426d-b1f9-2be903c83a48" >/dev/null 2> /dev/null
+        cryptsetup -y -q luksFormat --uuid "ffdbdad1-431e-426d-b1f9-2be903c83a48" "$device_" #"/dev/disk/by-uuid/ffdbdad1-431e-426d-b1f9-2be903c83a48"
         err2=$?
         if [ $err2 -eq 0 ]; then
             echo ""
@@ -166,7 +189,7 @@ if [ $non_persistent == 0 ]; then
             echo "---- ENTER your password again -----"
             echo ""
 
-            cryptsetup luksOpen "/dev/disk/by-uuid/0e113e75-b4df-418d-98f5-da6a763c1228" tbwdb
+            cryptsetup luksOpen "/dev/disk/by-uuid/ffdbdad1-431e-426d-b1f9-2be903c83a48" tbwdb
             err3=$?
             mkfs.ext4 -e panic -U "039dbad8-1784-4068-9500-33a440117cde" /dev/mapper/tbwdb >/dev/null 2> /dev/null
             if [ $err3 -eq 0 ]; then
@@ -218,7 +241,7 @@ if [ $non_persistent == 0 ]; then
         echo ""
 
         # try to unlock and mount
-        cryptsetup luksOpen "/dev/disk/by-uuid/0e113e75-b4df-418d-98f5-da6a763c1228" tbwdb
+        cryptsetup luksOpen "/dev/disk/by-uuid/ffdbdad1-431e-426d-b1f9-2be903c83a48" tbwdb
         err3=$?
         if [ $err3 -eq 0 ]; then
             mkdir -p /home/pi/ToxBlinkenwall/toxblinkenwall/db >/dev/null 2> /dev/null
@@ -249,10 +272,15 @@ if [ $non_persistent == 0 ]; then
         fi
     fi
 
+fi
+if [ $non_persistent == 0 ] || [ $vm_mode == 1 ]; then
     # copy phone book entries from persistent storage to actual usage dir
-    cp -f /home/pi/ToxBlinkenwall/toxblinkenwall/db/book_entry_*.txt /home/pi/ToxBlinkenwall/toxblinkenwall/
+    cp -f /home/pi/ToxBlinkenwall/toxblinkenwall/db/book_entry_*.txt /home/pi/ToxBlinkenwall/toxblinkenwall/ >/dev/null 2> /dev/null
+    chown pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/book_entry_*.txt >/dev/null 2> /dev/null
 
-
+    # copy phone custom bootstrap nodes file from persistent storage to actual usage dir
+    cp -f /home/pi/ToxBlinkenwall/toxblinkenwall/db/custom_bootstrap_nodes.dat /home/pi/ToxBlinkenwall/toxblinkenwall/ >/dev/null 2> /dev/null
+    chown pi:pi /home/pi/ToxBlinkenwall/toxblinkenwall/custom_bootstrap_nodes.dat >/dev/null 2> /dev/null
 fi
 
 
