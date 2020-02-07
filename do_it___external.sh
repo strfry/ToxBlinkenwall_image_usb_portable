@@ -88,7 +88,7 @@ pkgs="
 "
 
 for i in $pkgs ; do
-    redirect_cmd apt-get install $qqq -y --force-yes --no-install-recommends $i
+    redirect_cmd apk add $i
 done
 
 
