@@ -5,8 +5,7 @@ Vagrant.configure("2") do |config|
   # config.vm.box = "hashicorp-vagrant/ubuntu-16.04"
   # config.vm.box_version = "1.0.1"
   # ------------------------
-  config.vm.box = "hashicorp/bionic64"
-  config.vm.box_version = "1.0.282"
+  config.vm.box = "generic/alpine310"
   # ------------------------
   # config.vm.box = "ubuntu/xenial64"
   # config.vm.box_version = "v20190123.0.1"
@@ -16,12 +15,15 @@ Vagrant.configure("2") do |config|
   # config.vm.synced_folder "workspace/", "/workspace"
   config.vm.synced_folder "data/", "/data", :mount_options => ["ro"]
   # ------------------------
-  config.vm.provider "virtualbox" do |vb|
-    vb.gui = false
-    vb.memory = "4096"
+  config.vm.provider "libvirt" do |libvirt|
+    libvirt.driver = "kvm"
+    libvirt.memory = "2048"
     # vb.cpus = 4
-    vb.cpus = `nproc`.to_i
+    libvirt.cpus = `nproc`.to_i
   end
+
+#  config.vm.network :public_network, :ip => '10.20.30.41'
+
   # ------------------------
   config.vm.provision "shell", inline: <<-SHELL
     echo "building image ..."
